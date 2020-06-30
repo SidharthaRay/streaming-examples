@@ -8,20 +8,19 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType}
 object AppendModeDemo {
 
   def main(args: Array[String]): Unit = {
-//    System.setProperty("hadoop.home.dir", "/")
-    val sparkSession = SparkSession
+    val spark = SparkSession
       .builder
       .master("local[*]")
       .appName("Streaming Example")
       .config("spark.driver.bindAddress", "localhost")
       .getOrCreate()
-    sparkSession.sparkContext.setLogLevel(Constants.ERROR)
+    spark.sparkContext.setLogLevel(Constants.ERROR)
 
     val rootConfig = ConfigFactory.load("application.conf").getConfig("conf")
     val s3Config = rootConfig.getConfig("s3_conf")
 
-    sparkSession.sparkContext.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", s3Config.getString("access_key"))
-    sparkSession.sparkContext.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", s3Config.getString("secret_access_key"))
+    spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", s3Config.getString("access_key"))
+    spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", s3Config.getString("secret_access_key"))
 
     val dataPath = s"s3n://${s3Config.getString("s3_bucket")}/droplocation"
 
@@ -34,7 +33,7 @@ object AppendModeDemo {
       StructField("year", StringType, true) ::
       StructField("month", StringType, true) :: Nil)
 
-    val fileStreamDF = sparkSession.readStream
+    val fileStreamDF = spark.readStream
       .option("header", "true")
       .schema(schema)
       .csv(dataPath)

@@ -1,19 +1,25 @@
 package com.dsm.streaming.kafka
 
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql.SparkSession
 
 object KafkaConsumerDemo {
   def main(args: Array[String]): Unit = {
-    System.setProperty("hadoop.home.dir", "/")
-    val sparkSession = SparkSession.builder().master("local[*]").appName("Crime Data Stream").getOrCreate()
-    sparkSession.sparkContext.setLogLevel("ERROR")
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Crime Data Stream")
+      .getOrCreate()
+    spark.sparkContext.setLogLevel("ERROR")
 
-    val inputDf = sparkSession
+    val rootConfig = ConfigFactory.load("application.conf").getConfig("conf")
+    val kafkaConfig = rootConfig.getConfig("kafka_conf")
+
+    val inputDf = spark
       .readStream
       .format("kafka")
-      .option("kafka.bootstrap.servers", "localhost:9092")  //.option("kafka.bootstrap.servers", "host1:port1,host2:port2")
-      .option("subscribe", "demo")                          //.option("subscribe", "topic1,topic2")
-//      .option("startingOffsets", "earliest")
+      .option("kafka.bootstrap.servers", s"${kafkaConfig.getString("kafka_bootstrap_servers")}:9092")
+      .option("subscribe", kafkaConfig.getString("topic"))
+      .option("startingOffsets", "earliest")
       .load()
 
     val consoleOutput = inputDf
